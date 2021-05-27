@@ -6,6 +6,7 @@ from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 import torchvision
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 THRESHOLD = 0.8
 
@@ -36,7 +37,7 @@ def load_img(path):
 	img_t = transform_img(img).unsqueeze(0)
 	return img, img_t
 
-def predict(imgs, imgs_t, net, save_image=False, threshold=THRESHOLD):
+def predict(imgs, imgs_t, net, n, save_image=False, threshold=THRESHOLD):
 	outputs = net(imgs_t)
 	predictions = []
 	for i in range(len(outputs)):
@@ -55,15 +56,23 @@ def predict(imgs, imgs_t, net, save_image=False, threshold=THRESHOLD):
 			mask = np.expand_dims(mask, axis=2)
 			img_c = np.array(img_c*mask, dtype=np.uint8)
 			if save_image:
-				plt.imsave(f'outputs/save_{i}_{j}.jpg', img_c)
+				plt.imsave(f'outputs/save_{n}_{j}.jpg', img_c)
 			sub_predictions.append(img_c)
 		predictions.append(sub_predictions)
 	return predictions
 
 def main():
 	net = get_model()
-	img, img_t = load_img(path='test/1.jpg')
-	preds = predict([img], img_t, net, save_image=True)
+	n = 0
+	total_files = sum(len(files) for _, _, files in os.walk('./test'))
+
+	with os.scandir('./test/') as entries:
+		for entry in entries:
+			if entry.is_file():
+				print(f'Processing file {n+1}/{total_files}')
+				img, img_t = load_img(path=f'test/{entry.name}')
+				preds = predict(imgs=[img], imgs_t=img_t, net=net, n=n, save_image=True)
+				n += 1
 
 if __name__ == '__main__':
 	main()
